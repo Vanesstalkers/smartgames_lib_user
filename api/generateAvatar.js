@@ -11,7 +11,7 @@ async (context, {} = {}) => {
   user.set({ money: balance });
   await user.saveChanges();
 
-  lib.store.broadcaster.publishAction(`lobby-${lobbyId}`, 'userGenerateAvatar', {
+  await lib.store.broadcaster.publishAction(`lobby-${lobbyId}`, 'userGenerateAvatar', {
     userId,
     userGender: user.gender,
     userInfo: user.info,

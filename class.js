@@ -57,19 +57,34 @@
      * @param {*} data
      */
     async processData(data) {
-      this.set(data);
+      this.set(data, { removeEmptyObject: true });
       await this.saveChanges();
     }
 
-    linkSession(session) {
+    async linkSession(session) {
       this.#sessions.set(session.id(), session);
       session.user(this);
       session.linkTime = Date.now(); // время последнего create или load
+
+      await session.subscribe(this.channelName(), {
+        rule: 'fields',
+        fields: [
+          ...['gameId', 'playerId', 'name', 'login'],
+          ...['tgUsername', 'gender', 'info', 'avatarCode'],
+          ...['avatars', 'lobbyPinnedItems', 'lobbyGameConfigs'],
+          ...['currentTutorial', 'helper', 'helperLinks', 'finishedTutorials'],
+          'rankings',
+          'personalChatMap',
+          'money',
+        ],
+      });
     }
     async unlinkSession(session) {
       this.#sessions.delete(session.id());
       if (this.#sessions.size === 0) await db.redis.hdel('users', this.id());
       session.user(null);
+
+      await session.unsubscribe(this.channelName());
     }
     sessions() {
       return this.#sessions.values();
@@ -79,7 +94,6 @@
     }
 
     addExternalSession(sessionChannel) {
-      console.info('addExternalSession', sessionChannel);
       this.#externalSessions.push(sessionChannel);
     }
     async broadcastToSessions({ data, type = 'session/error' } = {}) {

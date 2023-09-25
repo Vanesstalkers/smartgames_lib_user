@@ -1,7 +1,9 @@
 ({
   access: 'public',
   method: async (context, { token, windowTabId, demo, login, password }) => {
-    const session = new lib.user.sessionClass({ client: context.client });
+    const userClass = (domain.user.class || lib.user.class)();
+    const sessionClass = (domain.user.session || lib.user.session)();
+    const session = new sessionClass({ client: context.client });
     if (token) {
       let sessionLoadResult;
       sessionLoadResult = await session
@@ -47,7 +49,7 @@
     } else {
       if (!token) {
         if (demo) {
-          const user = await new lib.user.mainClass().create({}, { demo }).catch((err) => {
+          const user = await new userClass().create({}, { demo }).catch((err) => {
             if (err === 'not_created') throw new Error('Ошибка создания демо-пользователя');
             else throw err;
           });
@@ -66,9 +68,7 @@
     context.client.addListener('close', async () => {
       if (session.onClose.length) for (const f of session.onClose) await f();
 
-      const user = session.user();
-      if (user) user.unlinkSession(session);
-      session.unsubscribe(`user-${session.userId}`);
+      session.user().unlinkSession(session);
       console.log(`session disconnected (token=${session.token}, windowTabId=${windowTabId}`);
     });
 
