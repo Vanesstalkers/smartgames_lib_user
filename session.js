@@ -80,16 +80,16 @@
     processData(data) {
       const client = this.client();
       try {
-        client.emit('db/smartUpdated', data);
+        client.emit('action/emit', { eventName: 'updateStore', data });
       } catch (err) {
         // ошибки быть не должно, строчка ниже лежит как пример обработчика
         // for (const callback of client.events.close) callback();
       }
     }
-    send(handler, data) {
+    emit(eventName, data) {
       const client = this.client();
       try {
-        client.emit(handler, data);
+        client.emit('action/emit', { eventName, data });
       } catch (err) {
         // ошибки быть не должно, строчка ниже лежит как пример обработчика
         // for (const callback of client.events.close) callback();
