@@ -15,6 +15,7 @@
           if (err !== 'not_found' && err !== 'user_not_found') throw err;
           if (err === 'user_not_found') token = null; // удалили из БД - нужно пересоздавать сессию (не учитывает подгруженные в store.user и redis данные - нужна перезагрузка процесса, либо удаление соответствующих данных)
 
+          // возможно сессия открыта в другом окне
           sessionLoadResult = await session
             .load(
               { fromDB: { query: { token } } },
@@ -69,6 +70,11 @@
       if (session.onClose.length) for (const f of session.onClose) await f();
 
       session.user().unlinkSession(session);
+
+      // удаляем из store и broadcaster
+      session.remove();
+      if (!user.sessions().length) user.remove();
+
       console.log(`session disconnected (token=${session.token}, windowTabId=${windowTabId}`);
     });
 
