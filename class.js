@@ -56,9 +56,9 @@
      * Сохраняет данные при получении обновлений
      * @param {*} data
      */
-    async processData(data) {
+    async processData(data, processOwner) {
       this.set(data, { removeEmptyObject: true });
-      await this.saveChanges();
+      await this.saveChanges(`processData(${JSON.stringify(processOwner)})`);
     }
 
     async linkSession(session) {
