@@ -80,16 +80,19 @@
     processData(data, processOwner) {
       const client = this.client();
       try {
-        client.emit('action/emit', { eventName: 'updateStore', data, processOwner });
+        const { f, col, id } = processOwner;
+        const _ = { f, col };
+        client.emit('action/emit', { _, eventName: 'updateStore', data });
       } catch (err) {
         // ошибки быть не должно, строчка ниже лежит как пример обработчика
         // for (const callback of client.events.close) callback();
       }
     }
-    emit(eventName, data) {
+    emit(eventName, data, processOwner) {
       const client = this.client();
       try {
-        client.emit('action/emit', { eventName, data });
+        const _ = processOwner;
+        client.emit('action/emit', { _, eventName, data });
       } catch (err) {
         // ошибки быть не должно, строчка ниже лежит как пример обработчика
         // for (const callback of client.events.close) callback();

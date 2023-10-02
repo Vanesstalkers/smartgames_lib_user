@@ -95,13 +95,13 @@
 
     async broadcastToSessions({ data, type = 'alert' } = {}) {
       for (const session of this.sessions()) {
-        session.emit(type, data);
+        session.emit(type, data, 'User.broadcastToSessions');
       }
     }
     logout() {
       for (const session of this.sessions()) {
         this.unlinkSession(session);
-        session.emit('logout');
+        session.emit('logout', {}, 'User.logout');
       }
     }
   };
