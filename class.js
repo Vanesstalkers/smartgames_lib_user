@@ -66,9 +66,9 @@
      * Сохраняет данные при получении обновлений
      * @param {*} data
      */
-    async processData(data, processOwner) {
+    async processData(data) {
       this.set(data, { removeEmptyObject: true });
-      await this.saveChanges(`processData(${JSON.stringify(processOwner)})`);
+      await this.saveChanges();
     }
 
     async linkSession(session) {
@@ -97,13 +97,13 @@
 
     async broadcastToSessions({ data, type = 'alert' } = {}) {
       for (const session of this.sessions()) {
-        session.emit(type, data, 'User.broadcastToSessions');
+        session.emit(type, data);
       }
     }
     logout() {
       for (const session of this.sessions()) {
         this.unlinkSession(session);
-        session.emit('logout', {}, 'User.logout');
+        session.emit('logout');
       }
     }
   };
