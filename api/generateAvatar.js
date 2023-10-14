@@ -9,7 +9,7 @@ async (context, {} = {}) => {
   const balance = (user.money || 0) - 1000000;
   if (balance < 0) throw new Error('Недостаточно денег (требуется 1.000.000 ₽)');
   user.set({ money: balance });
-  await user.saveChanges('user.api.generateAvatar');
+  await user.saveChanges();
 
   await lib.store.broadcaster.publishAction(`lobby-${lobbyId}`, 'userGenerateAvatar', {
     userId,

@@ -77,22 +77,19 @@
      * Базовая функция класса для сохранения данных при получении обновлений
      * @param {*} data
      */
-    processData(data, processOwner) {
+    processData(data) {
       const client = this.client();
       try {
-        const { f, col, id } = processOwner;
-        const _ = { f, col };
-        client.emit('action/emit', { _, eventName: 'updateStore', data });
+        client.emit('action/emit', { eventName: 'updateStore', data });
       } catch (err) {
         // ошибки быть не должно, строчка ниже лежит как пример обработчика
         // for (const callback of client.events.close) callback();
       }
     }
-    emit(eventName, data, processOwner) {
+    emit(eventName, data = {}) {
       const client = this.client();
       try {
-        const _ = processOwner;
-        client.emit('action/emit', { _, eventName, data });
+        client.emit('action/emit', { eventName, data });
       } catch (err) {
         // ошибки быть не должно, строчка ниже лежит как пример обработчика
         // for (const callback of client.events.close) callback();

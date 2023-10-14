@@ -28,7 +28,7 @@ async (
 
   if (Object.keys(setData).length) {
     user.set(setData);
-    await user.saveChanges('user.api.update');
+    await user.saveChanges();
     await user.updateUserCache(cacheData);
   }
   return { status: 'ok' };
