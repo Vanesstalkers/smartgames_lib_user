@@ -4,6 +4,16 @@
 
     constructor({ id } = {}) {
       super({ col: 'user', id });
+
+      this.broadcastableFields([
+        ...['gameId', 'playerId', 'name', 'login'],
+        ...['tgUsername', 'gender', 'info', 'avatarCode'],
+        ...['avatars', 'lobbyPinnedItems', 'lobbyGameConfigs'],
+        ...['currentTutorial', 'helper', 'helperLinks', 'finishedTutorials'],
+        'rankings',
+        'personalChatMap',
+        'money',
+      ]);
     }
     async create({ login, password, token, gender = 'male' }, { demo = false } = {}) {
       if (demo) {
@@ -68,15 +78,7 @@
 
       await session.subscribe(this.channelName(), {
         rule: 'fields',
-        fields: [
-          ...['gameId', 'playerId', 'name', 'login'],
-          ...['tgUsername', 'gender', 'info', 'avatarCode'],
-          ...['avatars', 'lobbyPinnedItems', 'lobbyGameConfigs'],
-          ...['currentTutorial', 'helper', 'helperLinks', 'finishedTutorials'],
-          'rankings',
-          'personalChatMap',
-          'money',
-        ],
+        fields: this.broadcastableFields(),
       });
     }
     async unlinkSession(session) {

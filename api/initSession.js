@@ -69,7 +69,8 @@
     context.client.addListener('close', async () => {
       if (session.onClose.length) for (const f of session.onClose) await f();
 
-      session.user().unlinkSession(session);
+      const user = session.user();
+      user.unlinkSession(session);
 
       // удаляем из store и broadcaster
       session.remove();
