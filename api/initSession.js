@@ -70,7 +70,7 @@
       if (session.onClose.length) for (const f of session.onClose) await f();
 
       const user = session.user();
-      user.unlinkSession(session);
+      await user.unlinkSession(session);
 
       // удаляем из store и broadcaster
       session.remove();

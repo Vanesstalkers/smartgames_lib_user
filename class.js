@@ -100,9 +100,9 @@
         session.emit(type, data);
       }
     }
-    logout() {
+    async logout() {
       for (const session of this.sessions()) {
-        this.unlinkSession(session);
+        await this.unlinkSession(session);
         session.emit('logout');
       }
     }
