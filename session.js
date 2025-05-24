@@ -86,10 +86,10 @@
         // for (const callback of client.events.close) callback();
       }
     }
-    emit(eventName, data = {}) {
+    emit(eventName, data = {}, config = {}) {
       const client = this.client();
       try {
-        client.emit('action/emit', { eventName, data });
+        client.emit('action/emit', { eventName, data, config });
       } catch (err) {
         // ошибки быть не должно, строчка ниже лежит как пример обработчика
         // for (const callback of client.events.close) callback();

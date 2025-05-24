@@ -95,9 +95,9 @@
       return this.#sessions.size > 0;
     }
 
-    async broadcastToSessions({ data, type = 'alert' } = {}) {
+    async broadcastToSessions({ data, config, type = 'alert' } = {}) {
       for (const session of this.sessions()) {
-        session.emit(type, data);
+        session.emit(type, data, config);
       }
     }
     async logout() {
