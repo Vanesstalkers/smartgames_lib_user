@@ -1,6 +1,6 @@
 ({
   access: 'public',
-  method: async (context, { token, windowTabId, demo, login, password }) => {
+  method: async (context, { token, windowTabId, demo, login, password, tutorial }) => {
     const userClass = (domain.user.class || lib.user.class)();
     const sessionClass = (domain.user.session || lib.user.session)();
     const session = new sessionClass({ client: context.client });
@@ -54,6 +54,12 @@
             if (err === 'not_created') throw new Error('Ошибка создания демо-пользователя');
             else throw err;
           });
+
+          if (tutorial) {
+            if (typeof tutorial === 'string') tutorial = { tutorial };
+            await lib.helper.updateTutorial(user, tutorial);
+          }
+
           session.removeChannel(); // если отработала "user_not_found", то сама сессия могла была быть корректно инициализирована (нужно удалить канал, чтобы повторно произошла подписка на юзера)
           await session.create({
             userId: user.id(),
