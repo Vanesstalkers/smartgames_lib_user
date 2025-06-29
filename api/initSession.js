@@ -67,7 +67,7 @@
             token: user.token,
             windowTabId,
           });
-        } else throw new Error(); // если тут указать текст ошибки, то он отобразится для только что вошедшего нового пользователя
+        } else throw 'new_user';
       }
     }
 
@@ -94,7 +94,7 @@
     return {
       token: session.token,
       userId: session.userId,
-      lobbyId: session.lobbyId,
+      lobbyId: session.lobbyId, // ??? как будто lobbyId всегда пустое
       availableLobbies,
     };
   },
