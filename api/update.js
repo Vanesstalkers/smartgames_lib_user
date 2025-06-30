@@ -27,8 +27,10 @@ async (
   if (lobbyGameConfigs !== undefined) setData.lobbyGameConfigs = lobbyGameConfigs;
 
   if (Object.keys(setData).length) {
-    user.set(setData);
-    await user.saveChanges();
+    user.set(setData, {
+      removeEmptyObject: true // иначе при старте каждой игры будет приходить одинаковый конфиг и после lib.utils.mergeDeep изменения запишутся в БД пустым объектом
+    });
+    await user.saveChanges({ saveToLobbyUser: true });
     await user.updateUserCache(cacheData);
   }
   return { status: 'ok' };

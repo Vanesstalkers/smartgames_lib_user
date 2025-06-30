@@ -14,7 +14,7 @@
     }
 
     async create({ userId, userLogin, token, windowTabId }) {
-      if (!userId) throw new Error('Ошибка создания сессии (empty userId).');
+      if (!userId) throw new Error('Ошибка создания сессии (empty userId)');
 
       const user = lib.store('user').get(userId);
       await super.create({ token, windowTabId, userId, userLogin });
@@ -46,10 +46,10 @@
       return this;
     }
     async login({ login, password, windowTabId }) {
-      if (!login || password === undefined) throw new Error('Неправильный логин или пароль.');
+      if (!login || password === undefined) throw new Error('Неправильный логин или пароль');
 
       const user = await db.mongo.findOne('user', { login });
-      if (!user) throw new Error('Неправильный логин или пароль.');
+      if (!user) throw new Error('Неправильный логин или пароль');
 
       let userOnline = await db.redis.hget('users', user._id.toString(), { json: true });
       if (!userOnline) {
@@ -59,15 +59,15 @@
             fromDB: { query: { login } },
           })
           .catch((err) => {
-            if (err === 'not_found') throw new Error('Неправильный логин или пароль.');
+            if (err === 'not_found') throw new Error('Неправильный логин или пароль');
             else throw err;
           });
         const valid = await metarhia.metautil.validatePassword(password, user.password);
-        if (!valid) throw new Error('Неправильный логин или пароль.');
+        if (!valid) throw new Error('Неправильный логин или пароль');
         userOnline = { id: user.id(), token: user.token };
       } else {
         const valid = await metarhia.metautil.validatePassword(password, userOnline.password);
-        if (!valid) throw new Error('Неправильный логин или пароль.');
+        if (!valid) throw new Error('Неправильный логин или пароль');
       }
       // если тут добавлять условия, то проследить, что во всех случаях отрабатывает user.linkSession
       await this.create({ userId: userOnline.id, userLogin: login, token: userOnline.token, windowTabId });
@@ -86,10 +86,10 @@
         // for (const callback of client.events.close) callback();
       }
     }
-    emit(eventName, data = {}) {
+    emit(eventName, data = {}, config = {}) {
       const client = this.client();
       try {
-        client.emit('action/emit', { eventName, data });
+        client.emit('action/emit', { eventName, data, config });
       } catch (err) {
         // ошибки быть не должно, строчка ниже лежит как пример обработчика
         // for (const callback of client.events.close) callback();

@@ -1,6 +1,6 @@
 ({
   access: 'public',
-  method: async (context, { token, windowTabId, demo, login, password }) => {
+  method: async (context, { token, windowTabId, demo, login, password, tutorial }) => {
     const userClass = (domain.user.class || lib.user.class)();
     const sessionClass = (domain.user.session || lib.user.session)();
     const session = new sessionClass({ client: context.client });
@@ -54,6 +54,12 @@
             if (err === 'not_created') throw new Error('Ошибка создания демо-пользователя');
             else throw err;
           });
+
+          if (tutorial) {
+            if (typeof tutorial === 'string') tutorial = { tutorial };
+            await lib.helper.updateTutorial(user, tutorial);
+          }
+
           session.removeChannel(); // если отработала "user_not_found", то сама сессия могла была быть корректно инициализирована (нужно удалить канал, чтобы повторно произошла подписка на юзера)
           await session.create({
             userId: user.id(),
@@ -61,7 +67,7 @@
             token: user.token,
             windowTabId,
           });
-        } else throw new Error('Требуется авторизация');
+        } else throw 'new_user';
       }
     }
 
@@ -70,7 +76,7 @@
       if (session.onClose.length) for (const f of session.onClose) await f();
 
       const user = session.user();
-      user.unlinkSession(session);
+      await user.unlinkSession(session);
 
       // удаляем из store и broadcaster
       session.remove();
@@ -88,7 +94,7 @@
     return {
       token: session.token,
       userId: session.userId,
-      lobbyId: session.lobbyId,
+      lobbyId: session.lobbyId, // ??? как будто lobbyId всегда пустое
       availableLobbies,
     };
   },

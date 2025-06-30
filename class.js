@@ -1,5 +1,5 @@
 () =>
-  class User extends lib.store.class(class {}, { broadcastEnabled: true }) {
+  class User extends lib.store.class(class { }, { broadcastEnabled: true }) {
     #sessions = new Map();
 
     constructor({ id } = {}) {
@@ -62,6 +62,17 @@
       await db.redis.hset('users', this.id(), { ...cacheData, ...data }, { json: true });
     }
 
+    async processAction(data) {
+      try {
+        await super.processAction(data);
+      } catch (exception) {
+        // делаем отправку в user, а не в gameuser, чтобы сообщение было видно в лобби (если ошибка в gameFinished)
+        lib.store.broadcaster.publishAction.call(this, `user-${this.id()}`, 'broadcastToSessions', {
+          data: { message: exception.message, stack: exception.stack }, config: { hideTime: 0 }
+        });
+      }
+    }
+
     /**
      * Сохраняет данные при получении обновлений
      * @param {*} data
@@ -95,15 +106,19 @@
       return this.#sessions.size > 0;
     }
 
-    async broadcastToSessions({ data, type = 'alert' } = {}) {
+    async broadcastToSessions({ data, config, type = 'alert' } = {}) {
       for (const session of this.sessions()) {
-        session.emit(type, data);
+        session.emit(type, data, config);
       }
     }
-    logout() {
+    async logout() {
       for (const session of this.sessions()) {
-        this.unlinkSession(session);
+        await this.unlinkSession(session);
         session.emit('logout');
       }
+    }
+
+    getName() {
+      return this.name || this.login;
     }
   };
