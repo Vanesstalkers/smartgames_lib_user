@@ -1,5 +1,5 @@
 () =>
-  class User extends lib.store.class(class { }, { broadcastEnabled: true }) {
+  class User extends lib.store.class(class {}, { broadcastEnabled: true }) {
     #sessions = new Map();
 
     constructor({ id } = {}) {
@@ -36,8 +36,11 @@
 
     async load(from, config) {
       await super.load(from, config);
-      const initiatedUser = await db.redis.hget('users', this.id());
-      if (!initiatedUser) await this.addUserToCache();
+      const id = this.id();
+      if (id) {
+        const initiatedUser = await db.redis.hget('users', id);
+        if (!initiatedUser) await this.addUserToCache();
+      }
       return this;
     }
 
@@ -68,7 +71,8 @@
       } catch (exception) {
         // делаем отправку в user, а не в gameuser, чтобы сообщение было видно в лобби (если ошибка в gameFinished)
         lib.store.broadcaster.publishAction.call(this, `user-${this.id()}`, 'broadcastToSessions', {
-          data: { message: exception.message, stack: exception.stack }, config: { hideTime: 0 }
+          data: { message: exception.message, stack: exception.stack },
+          config: { hideTime: 0 },
         });
       }
     }
