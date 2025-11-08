@@ -90,7 +90,7 @@
       userId: session.userId,
     }); // данные попадут в context (в следующих вызовах)
 
-    const availableLobbies = Array.from(lib.store.lobby.keys());
+    const availableLobbies = Array.from(lib.store('lobby').keys());
     return {
       token: session.token,
       userId: session.userId,
