@@ -1,9 +1,9 @@
 ({
   access: 'public',
   method: async (context, { token, windowTabId, demo, login, password, tutorial }) => {
-    const userClass = (domain.user.class || lib.user.class)();
-    const sessionClass = (domain.user.session || lib.user.session)();
-    const session = new sessionClass({ client: context.client });
+    const UserClass = (domain.user.class || lib.user.class)();
+    const SessionClass = (domain.user.session || lib.user.session)();
+    const session = new SessionClass({ client: context.client });
     if (token) {
       let sessionLoadResult;
       sessionLoadResult = await session
@@ -13,7 +13,12 @@
         .catch(async (err) => {
           // любая ошибка, кроме ожидаемых
           if (err !== 'not_found' && err !== 'user_not_found') throw err;
-          if (err === 'user_not_found') token = null; // удалили из БД - нужно пересоздавать сессию (не учитывает подгруженные в store.user и redis данные - нужна перезагрузка процесса, либо удаление соответствующих данных)
+          if (err === 'user_not_found') {
+            /* удалили из БД - нужно пересоздавать сессию
+            (не учитывает подгруженные в store.user и redis данные -
+            нужна перезагрузка процесса, либо удаление соответствующих данных)*/
+            token = null;
+          }
 
           // возможно сессия открыта в другом окне
           sessionLoadResult = await session
@@ -40,35 +45,36 @@
           return sessionLoadResult;
         });
       if (sessionLoadResult?.reconnect) {
-        sessionLoadResult.reconnect.ports = [config.server.balancer].concat(config.server.ports);
+        sessionLoadResult.reconnect.ports = [config.server.balancer].concat(config.server.ports).filter((port) => port);
         return { reconnect: sessionLoadResult.reconnect };
       }
     }
 
     if (login || password !== undefined) {
       await session.login({ login, password, windowTabId });
-    } else {
-      if (!token) {
-        if (demo) {
-          const user = await new userClass().create({}, { demo }).catch((err) => {
-            if (err === 'not_created') throw new Error('Ошибка создания демо-пользователя');
-            else throw err;
-          });
+    } else if (!token) {
+      if (demo) {
+        const user = await new UserClass().create({}, { demo }).catch((err) => {
+          if (err === 'not_created') throw new Error('Ошибка создания демо-пользователя');
+          else throw err;
+        });
 
-          if (tutorial) {
-            if (typeof tutorial === 'string') tutorial = { tutorial };
-            await lib.helper.updateTutorial(user, tutorial);
-          }
+        if (tutorial) {
+          if (typeof tutorial === 'string') tutorial = { tutorial };
+          await lib.helper.updateTutorial(user, tutorial);
+        }
 
-          session.removeChannel(); // если отработала "user_not_found", то сама сессия могла была быть корректно инициализирована (нужно удалить канал, чтобы повторно произошла подписка на юзера)
-          await session.create({
-            userId: user.id(),
-            userLogin: user.login,
-            token: user.token,
-            windowTabId,
-          });
-        } else throw 'new_user';
-      }
+        /* если отработала "user_not_found", то сама сессия могла была быть корректно инициализирована
+        (нужно удалить канал, чтобы повторно произошла подписка на юзера) */
+        session.removeChannel();
+
+        await session.create({
+          userId: user.id(),
+          userLogin: user.login,
+          token: user.token,
+          windowTabId,
+        });
+      } else throw 'new_user';
     }
 
     session.onClose = [];

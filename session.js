@@ -28,8 +28,8 @@
       let user;
       const userOnline = await db.redis.hget('users', this.userId, { json: true });
       if (!userOnline) {
-        const userClass = this.getUserClass();
-        user = await new userClass().load({ fromDB: { id: this.userId } }).catch((err) => {
+        const UserClass = this.getUserClass();
+        user = await new UserClass().load({ fromDB: { id: this.userId } }).catch((err) => {
           if (err === 'not_found') throw 'user_not_found';
           // должно отличаться от not_found самой сессии
           else throw err;
@@ -53,8 +53,8 @@
 
       let userOnline = await db.redis.hget('users', user._id.toString(), { json: true });
       if (!userOnline) {
-        const userClass = this.getUserClass();
-        const user = await new userClass()
+        const UserClass = this.getUserClass();
+        const user = await new UserClass()
           .load({
             fromDB: { query: { login } },
           })
