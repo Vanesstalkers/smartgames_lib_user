@@ -4,16 +4,6 @@
 
     constructor({ id } = {}) {
       super({ col: 'user', id });
-
-      this.broadcastableFields([
-        ...['gameId', 'playerId', 'name', 'login'],
-        ...['tgUsername', 'gender', 'info', 'avatarCode'],
-        ...['avatars', 'lobbyPinnedItems', 'lobbyGameConfigs'],
-        ...['currentTutorial', 'helper', 'helperLinks', 'finishedTutorials'],
-        'rankings',
-        'personalChatMap',
-        'money',
-      ]);
     }
     async create({ login, password, token, gender = 'male' }, { demo = false } = {}) {
       if (demo) {
@@ -36,11 +26,8 @@
 
     async load(from, config) {
       await super.load(from, config);
-      const id = this.id();
-      if (id) {
-        const initiatedUser = await db.redis.hget('users', id);
-        if (!initiatedUser) await this.addUserToCache();
-      }
+      const initiatedUser = await db.redis.hget('users', this.id());
+      if (!initiatedUser) await this.addUserToCache();
       return this;
     }
 
@@ -62,14 +49,13 @@
     async updateUserCache(data) {
       if (!Object.keys(data).length) return;
       const cacheData = await db.redis.hget('users', this.id(), { json: true });
-      await db.redis.hset('users', this.id(), { ...(cacheData || {}), ...data }, { json: true });
+      await db.redis.hset('users', this.id(), { ...cacheData, ...data }, { json: true });
     }
 
     async processAction(data) {
       try {
         await super.processAction(data);
       } catch (exception) {
-        // делаем отправку в user, а не в gameuser, чтобы сообщение было видно в лобби (если ошибка в gameFinished)
         lib.store.broadcaster.publishAction.call(this, `user-${this.id()}`, 'broadcastToSessions', {
           data: { message: exception.message, stack: exception.stack },
           config: { hideTime: 0 },

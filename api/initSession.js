@@ -1,9 +1,10 @@
 ({
   access: 'public',
   method: async (context, { token, windowTabId, demo, login, password, tutorial }) => {
-    const UserClass = (domain.user.class || lib.user.class)();
-    const SessionClass = (domain.user.session || lib.user.session)();
+    const UserClass = domain.user.Class || lib.user.Class();
+    const SessionClass = domain.user.Session || lib.user.Session();
     const session = new SessionClass({ client: context.client });
+
     if (token) {
       let sessionLoadResult;
       sessionLoadResult = await session
@@ -97,11 +98,11 @@
     }); // данные попадут в context (в следующих вызовах)
 
     const availableLobbies = Array.from(lib.store('lobby').keys());
+    const lobbyId = session.lobbyId || availableLobbies[0];
     return {
       token: session.token,
       userId: session.userId,
-      lobbyId: session.lobbyId, // ??? как будто lobbyId всегда пустое
-      availableLobbies,
+      lobbyId
     };
   },
 });

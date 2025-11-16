@@ -1,10 +1,8 @@
-async (context, {} = {}) => {
+async (context) => {
   const { userId, sessionId } = context.session.state;
   const session = lib.store('session').get(sessionId);
   const { lobbyId } = session;
   const user = lib.store('user').get(userId);
-
-  console.log('generateAvatar login', user.login);
 
   const balance = (user.money || 0) - 1000000;
   if (balance < 0) throw new Error('Недостаточно денег (требуется 1.000.000 ₽)');

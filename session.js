@@ -10,7 +10,7 @@
       return this.#user;
     }
     getUserClass() {
-      return lib.user.class();
+      return lib.user.Class();
     }
 
     async create({ userId, userLogin, token, windowTabId }) {
@@ -27,18 +27,18 @@
 
       let user;
       const userOnline = await db.redis.hget('users', this.userId, { json: true });
-      if (!userOnline) {
+      if (userOnline) {
+        if (userOnline.workerId !== application.worker.id) {
+          return { reconnect: { workerId: userOnline.workerId, port: userOnline.port } };
+        }
+        user = lib.store('user').get(userOnline.id);
+      } else {
         const UserClass = this.getUserClass();
         user = await new UserClass().load({ fromDB: { id: this.userId } }).catch((err) => {
           if (err === 'not_found') throw 'user_not_found';
           // должно отличаться от not_found самой сессии
           else throw err;
         });
-      } else {
-        if (userOnline.workerId !== application.worker.id) {
-          return { reconnect: { workerId: userOnline.workerId, port: userOnline.port } };
-        }
-        user = lib.store('user').get(userOnline.id);
       }
 
       if (config.linkSessionToUser) await user.linkSession(this);
