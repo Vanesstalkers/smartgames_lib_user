@@ -13,6 +13,97 @@
       return lib.user.Class();
     }
 
+    async init({ context, data }) {
+      const { windowTabId, demo, login, password, tutorial } = data;
+      let token = data.token;
+
+      if (token) {
+        let sessionLoadResult;
+        sessionLoadResult = await this
+          .load({
+            fromDB: { query: { token, windowTabId } },
+          })
+          .catch(async (err) => {
+            // любая ошибка, кроме ожидаемых
+            if (err !== 'not_found' && err !== 'user_not_found') throw err;
+            if (err === 'user_not_found') {
+              /* удалили из БД - нужно пересоздавать сессию
+              (не учитывает подгруженные в store.user и redis данные -
+              нужна перезагрузка процесса, либо удаление соответствующих данных)*/
+              token = null;
+            }
+
+            // возможно сессия открыта в другом окне
+            sessionLoadResult = await this
+              .load(
+                { fromDB: { query: { token } } },
+                {
+                  initStore: false,
+                  linkSessionToUser: false,
+                }
+              )
+              .then(async () => {
+                await this.create({ userId: this.userId, userLogin: this.userLogin, token, windowTabId });
+              })
+              .catch((err) => {
+                // любая ошибка, кроме ожидаемых
+                if (err !== 'not_found' && err !== 'user_not_found') throw err;
+                token = null;
+              });
+
+            return sessionLoadResult;
+          });
+      }
+
+      if (login || password !== undefined) {
+        await this.login({ login, password, windowTabId });
+      } else if (!token) {
+        if (demo) {
+          const UserClass = this.getUserClass();
+          const user = await new UserClass().create({}, { demo }).catch((err) => {
+            if (err === 'not_created') throw new Error('Ошибка создания демо-пользователя');
+            else throw err;
+          });
+
+          if (tutorial) {
+            await lib.helper.updateTutorial(user, typeof tutorial === 'string' ? { tutorial } : tutorial);
+          }
+
+          /* если отработала "user_not_found", то сама сессия могла была быть корректно инициализирована
+          (нужно удалить канал, чтобы повторно произошла подписка на юзера) */
+          this.removeChannel();
+
+          await this.create({
+            userId: user.id(),
+            userLogin: user.login,
+            token: user.token,
+            windowTabId,
+          });
+        } else throw 'new_user';
+      }
+
+      this.onClose = [];
+      context.client.addListener('close', async () => {
+        if (this.onClose.length) for (const f of this.onClose) await f();
+
+        const user = this.user();
+        await user.unlinkSession(this);
+
+        // удаляем из store и broadcaster
+        this.remove();
+        if (!user.sessions().length) user.remove();
+
+        console.log(`session disconnected (token=${this.token}, windowTabId=${windowTabId}`);
+      });
+
+      context.client.startSession(this.token, {
+        sessionId: this.id(),
+        userId: this.userId,
+      }); // данные попадут в context (в следующих вызовах)
+
+      return { token: this.token, userId: this.userId };
+    }
+
     async create({ userId, userLogin, token, windowTabId }) {
       if (!userId) throw new Error('Ошибка создания сессии (empty userId)');
 
@@ -28,9 +119,6 @@
       let user;
       const userOnline = await db.redis.hget('users', this.userId, { json: true });
       if (userOnline) {
-        if (userOnline.workerId !== application.worker.id) {
-          return { reconnect: { workerId: userOnline.workerId, port: userOnline.port } };
-        }
         user = lib.store('user').get(userOnline.id);
       } else {
         const UserClass = this.getUserClass();
