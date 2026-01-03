@@ -19,67 +19,55 @@
 
       if (token) {
         let sessionLoadResult;
-        sessionLoadResult = await this
-          .load({
-            fromDB: { query: { token, windowTabId } },
-          })
-          .catch(async (err) => {
-            // любая ошибка, кроме ожидаемых
-            if (err !== 'not_found' && err !== 'user_not_found') throw err;
-            if (err === 'user_not_found') {
-              /* удалили из БД - нужно пересоздавать сессию
+
+        const loadQuery = { fromDB: { query: { token, windowTabId } } };
+        sessionLoadResult = await this.load(loadQuery).catch(async (err) => {
+          // любая ошибка, кроме ожидаемых
+          if (err !== 'not_found' && err !== 'user_not_found') throw err;
+          if (err === 'user_not_found') {
+            /* удалили из БД - нужно пересоздавать сессию
               (не учитывает подгруженные в store.user и redis данные -
               нужна перезагрузка процесса, либо удаление соответствующих данных)*/
+            token = null;
+          }
+
+          // возможно сессия открыта в другом окне
+          const loadQuery = { fromDB: { query: { token } } };
+          sessionLoadResult = await this.load(loadQuery, { initStore: false, linkSessionToUser: false })
+            .then(async () => {
+              const { userId, userLogin } = this;
+              await this.create({ userId, userLogin, token, windowTabId });
+            })
+            .catch((err) => {
+              // любая ошибка, кроме ожидаемых
+              if (err !== 'not_found' && err !== 'user_not_found') throw err;
               token = null;
-            }
+            });
 
-            // возможно сессия открыта в другом окне
-            sessionLoadResult = await this
-              .load(
-                { fromDB: { query: { token } } },
-                {
-                  initStore: false,
-                  linkSessionToUser: false,
-                }
-              )
-              .then(async () => {
-                await this.create({ userId: this.userId, userLogin: this.userLogin, token, windowTabId });
-              })
-              .catch((err) => {
-                // любая ошибка, кроме ожидаемых
-                if (err !== 'not_found' && err !== 'user_not_found') throw err;
-                token = null;
-              });
-
-            return sessionLoadResult;
-          });
+          return sessionLoadResult;
+        });
       }
 
       if (login || password !== undefined) {
         await this.login({ login, password, windowTabId });
       } else if (!token) {
-        if (demo) {
-          const UserClass = this.getUserClass();
-          const user = await new UserClass().create({}, { demo }).catch((err) => {
-            if (err === 'not_created') throw new Error('Ошибка создания демо-пользователя');
-            else throw err;
-          });
+        if (!demo) throw 'new_user';
 
-          if (tutorial) {
-            await lib.helper.updateTutorial(user, typeof tutorial === 'string' ? { tutorial } : tutorial);
-          }
+        const UserClass = this.getUserClass();
+        const user = await new UserClass().create({}, { demo }).catch((err) => {
+          if (err === 'not_created') throw new Error('Ошибка создания демо-пользователя');
+          else throw err;
+        });
 
-          /* если отработала "user_not_found", то сама сессия могла была быть корректно инициализирована
+        if (tutorial) {
+          await lib.helper.updateTutorial(user, typeof tutorial === 'string' ? { tutorial } : tutorial);
+        }
+
+        /* если отработала "user_not_found", то сама сессия могла была быть корректно инициализирована
           (нужно удалить канал, чтобы повторно произошла подписка на юзера) */
-          this.removeChannel();
+        this.removeChannel();
 
-          await this.create({
-            userId: user.id(),
-            userLogin: user.login,
-            token: user.token,
-            windowTabId,
-          });
-        } else throw 'new_user';
+        await this.create({ userId: user.id(), userLogin: user.login, token: user.token, windowTabId });
       }
 
       this.onClose = [];
@@ -96,10 +84,7 @@
         console.log(`session disconnected (token=${this.token}, windowTabId=${windowTabId}`);
       });
 
-      context.client.startSession(this.token, {
-        sessionId: this.id(),
-        userId: this.userId,
-      }); // данные попадут в context (в следующих вызовах)
+      context.client.startSession(this.token, { sessionId: this.id(), userId: this.userId }); // данные попадут в context (в следующих вызовах)
 
       return { token: this.token, userId: this.userId };
     }
@@ -118,13 +103,12 @@
 
       let user;
       const userOnline = await db.redis.hget('users', this.userId, { json: true });
-      if (userOnline) {
-        user = lib.store('user').get(userOnline.id);
-      } else {
+
+      if (userOnline) user = lib.store('user').get(userOnline.id);
+      else {
         const UserClass = this.getUserClass();
         user = await new UserClass().load({ fromDB: { id: this.userId } }).catch((err) => {
-          if (err === 'not_found') throw 'user_not_found';
-          // должно отличаться от not_found самой сессии
+          if (err === 'not_found') throw new Error('user_not_found');
           else throw err;
         });
       }
@@ -142,21 +126,22 @@
       let userOnline = await db.redis.hget('users', user._id.toString(), { json: true });
       if (!userOnline) {
         const UserClass = this.getUserClass();
-        const user = await new UserClass()
-          .load({
-            fromDB: { query: { login } },
-          })
-          .catch((err) => {
-            if (err === 'not_found') throw new Error('Неправильный логин или пароль');
-            else throw err;
-          });
+
+        const loadQuery = { fromDB: { query: { login } } };
+        const user = await new UserClass().load(loadQuery).catch((err) => {
+          if (err === 'not_found') throw new Error('Неправильный логин или пароль');
+          else throw err;
+        });
+
         const valid = await metarhia.metautil.validatePassword(password, user.password);
         if (!valid) throw new Error('Неправильный логин или пароль');
+
         userOnline = { id: user.id(), token: user.token };
       } else {
         const valid = await metarhia.metautil.validatePassword(password, userOnline.password);
         if (!valid) throw new Error('Неправильный логин или пароль');
       }
+
       // если тут добавлять условия, то проследить, что во всех случаях отрабатывает user.linkSession
       await this.create({ userId: userOnline.id, userLogin: login, token: userOnline.token, windowTabId });
     }
