@@ -67,7 +67,7 @@
      * Сохраняет данные при получении обновлений
      * @param {*} data
      */
-    async processData(data) {
+    async processData(data, broadcaster) {
       this.set(data, { removeEmptyObject: true });
       await this.saveChanges();
     }

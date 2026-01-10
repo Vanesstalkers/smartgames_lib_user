@@ -103,9 +103,9 @@
 
       let user;
       const userOnline = await db.redis.hget('users', this.userId, { json: true });
-
       if (userOnline) user = lib.store('user').get(userOnline.id);
-      else {
+
+      if (!user) {
         const UserClass = this.getUserClass();
         user = await new UserClass().load({ fromDB: { id: this.userId } }).catch((err) => {
           if (err === 'not_found') throw new Error('user_not_found');
@@ -150,7 +150,7 @@
      * Базовая функция класса для сохранения данных при получении обновлений
      * @param {*} data
      */
-    processData(data) {
+    async processData(data, broadcaster) {
       const client = this.client();
       try {
         client.emit('action/emit', { eventName: 'updateStore', data });
