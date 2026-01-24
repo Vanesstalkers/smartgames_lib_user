@@ -1,7 +1,4 @@
-async (
-  context,
-  { login, password, name, tgUsername, gender, info, avatarCode, lobbyPinnedItems, lobbyGameConfigs }
-) => {
+async (context, { login, password, name, tgUsername, gender, info, avatarCode, lobbyConfigs }) => {
   const { userId } = context.session.state;
   const user = lib.store('user').get(userId);
 
@@ -23,8 +20,7 @@ async (
   if (info !== undefined) setData.info = info;
   if (avatarCode !== undefined) setData.avatarCode = avatarCode;
   // !!! перенести в lobby.user
-  if (lobbyPinnedItems !== undefined) setData.lobbyPinnedItems = lobbyPinnedItems;
-  if (lobbyGameConfigs !== undefined) setData.lobbyGameConfigs = lobbyGameConfigs;
+  if (lobbyConfigs !== undefined) setData.lobbyConfigs = lobbyConfigs;
 
   if (Object.keys(setData).length) {
     /* иначе при старте каждой игры будет приходить одинаковый конфиг
