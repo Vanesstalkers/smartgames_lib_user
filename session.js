@@ -108,7 +108,7 @@
       if (!user) {
         const UserClass = this.getUserClass();
         user = await new UserClass().load({ fromDB: { id: this.userId } }).catch((err) => {
-          if (err === 'not_found') throw new Error('user_not_found');
+          if (err === 'not_found') throw 'user_not_found';
           else throw err;
         });
       }
