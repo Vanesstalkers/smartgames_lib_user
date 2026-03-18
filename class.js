@@ -101,10 +101,10 @@
         session.emit(type, data, config);
       }
     }
-    async logout() {
+    async returnToLobby() {
       for (const session of this.sessions()) {
         await this.unlinkSession(session);
-        session.emit('logout');
+        session.emit('returnToLobby');
       }
     }
 
