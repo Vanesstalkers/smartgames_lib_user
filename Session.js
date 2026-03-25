@@ -1,5 +1,5 @@
 () =>
-  class Session extends lib.store.class(class {}, { broadcastEnabled: true }) {
+  class Session extends lib.store.Class(class {}, { broadcastEnabled: true }) {
     #user;
 
     constructor({ id, client } = {}) {

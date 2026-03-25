@@ -1,5 +1,5 @@
 () =>
-  class User extends lib.store.class(class {}, { broadcastEnabled: true }) {
+  class User extends lib.store.Class(class {}, { broadcastEnabled: true }) {
     #sessions = new Map();
 
     constructor({ id } = {}) {
