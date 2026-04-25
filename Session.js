@@ -65,7 +65,7 @@
 
         /* если отработала "user_not_found", то сама сессия могла была быть корректно инициализирована
           (нужно удалить канал, чтобы повторно произошла подписка на юзера) */
-        this.removeChannel();
+        await this.removeChannel();
 
         await this.create({ userId: user.id(), userLogin: user.login, token: user.token, windowTabId });
       }
