@@ -1,4 +1,4 @@
-async (context, { login, password, name, tgUsername, gender, info, avatarCode, lobbyConfigs }) => {
+async (context, { login, password, name, tgUsername, gender, info, avatarCode, lobbyConfigs, changeHelperScale }) => {
   const { userId } = context.session.state;
   const user = lib.store('user').get(userId);
 
@@ -21,6 +21,9 @@ async (context, { login, password, name, tgUsername, gender, info, avatarCode, l
   if (avatarCode !== undefined) setData.avatarCode = avatarCode;
   // !!! перенести в lobby.user
   if (lobbyConfigs !== undefined) setData.lobbyConfigs = lobbyConfigs;
+  if (changeHelperScale !== undefined) {
+    setData.lobbyConfigs = { helperScale: (parseFloat((user.lobbyConfigs?.helperScale || 1)) + changeHelperScale).toFixed(2) };
+  }
 
   if (Object.keys(setData).length) {
     /* иначе при старте каждой игры будет приходить одинаковый конфиг
